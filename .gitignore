@@ -216,3 +216,19 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Ignore datasets
+data/raw/*.csv
+
+# Ignore processed datasets
+data/processed/*.csv
+
+# Ignore trained models
+models/*.pkl
+models/*.joblib
+
+# Ignore environment files
+.env
+
+# Ignore logs
+logs/
