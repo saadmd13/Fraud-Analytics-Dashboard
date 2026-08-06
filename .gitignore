@@ -217,24 +217,36 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Ignore datasets
+# ===========================
+# Data Files
+# ===========================
+
+# Raw datasets
 data/raw/*.csv
 
-# Ignore processed datasets
+# Processed datasets
 data/processed/*.csv
 
-# Ignore processed datasets
-data/processed/*.csv
-
-# Ignore engineered features
+# Engineered feature datasets
 data/features/*.csv
 
-# Ignore trained models
+# ===========================
+# Machine Learning Models
+# ===========================
+
 models/*.pkl
 models/*.joblib
+models/*.onnx
 
-# Ignore environment files
+# ===========================
+# Environment Files
+# ===========================
+
 .env
 
-# Ignore logs
+# ===========================
+# Logs
+# ===========================
+
 logs/
+*.log
