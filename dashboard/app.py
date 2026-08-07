@@ -5,6 +5,8 @@ import plotly.express as px
 from api import (
     get_dashboard,
     get_transactions,
+    get_fraud_transactions,
+    get_transaction,
 )
 
 # =====================================================
@@ -18,124 +20,297 @@ st.set_page_config(
 )
 
 # =====================================================
-# Dashboard Title
+# Sidebar
 # =====================================================
 
-st.title("💳 Fraud Analytics Dashboard")
+st.sidebar.title("💳 Fraud Analytics")
 
-# =====================================================
-# Load Data
-# =====================================================
+st.sidebar.markdown("---")
 
-summary = get_dashboard()
-
-# Load enough rows for visualization
-transactions = pd.DataFrame(
-    get_transactions(limit=10000)
+page = st.sidebar.radio(
+    "Navigation",
+    [
+        "Dashboard",
+        "Transactions",
+        "Prediction"
+    ]
 )
 
+st.sidebar.markdown("---")
+st.sidebar.success("Backend Connected ✅")
+
 # =====================================================
-# KPI Cards
+# DASHBOARD PAGE
 # =====================================================
 
-col1, col2, col3, col4 = st.columns(4)
+if page == "Dashboard":
 
-with col1:
-    st.metric(
-        "Total Transactions",
-        f"{summary['total_transactions']:,}"
+    st.title("💳 Fraud Analytics Dashboard")
+
+    # -----------------------------
+    # Load Data
+    # -----------------------------
+
+    summary = get_dashboard()
+
+    transactions = pd.DataFrame(
+        get_transactions(limit=10000)
     )
 
-with col2:
-    st.metric(
-        "Fraud Cases",
-        f"{summary['fraud_cases']:,}"
-    )
+    # -----------------------------
+    # KPI Cards
+    # -----------------------------
 
-with col3:
-    st.metric(
-        "Legitimate Transactions",
-        f"{summary['legitimate_cases']:,}"
-    )
+    col1, col2, col3, col4 = st.columns(4)
 
-with col4:
-    st.metric(
-        "Fraud Percentage",
-        f"{summary['fraud_percentage']}%"
-    )
+    with col1:
+        st.metric(
+            "Total Transactions",
+            f"{summary['total_transactions']:,}"
+        )
 
-st.divider()
+    with col2:
+        st.metric(
+            "Fraud Cases",
+            f"{summary['fraud_cases']:,}"
+        )
 
-# =====================================================
-# Charts
-# =====================================================
+    with col3:
+        st.metric(
+            "Legitimate Transactions",
+            f"{summary['legitimate_cases']:,}"
+        )
 
-chart1, chart2 = st.columns(2)
+    with col4:
+        st.metric(
+            "Fraud Percentage",
+            f"{summary['fraud_percentage']}%"
+        )
 
-# =====================================================
-# Pie Chart
-# =====================================================
+    st.divider()
 
-with chart1:
+    # =====================================================
+    # Charts
+    # =====================================================
 
-    st.subheader("Fraud Distribution")
+    chart1, chart2 = st.columns(2)
 
-    fraud_counts = pd.DataFrame({
-        "Class": [
-            "Legitimate",
-            "Fraud"
-        ],
-        "Count": [
-            summary["legitimate_cases"],
-            summary["fraud_cases"]
+    # -----------------------------
+    # Fraud Distribution
+    # -----------------------------
+
+    with chart1:
+
+        st.subheader("Fraud Distribution")
+
+        fraud_counts = (
+            transactions["actual_class"]
+            .map({
+                0: "Legitimate",
+                1: "Fraud"
+            })
+            .value_counts()
+            .reset_index()
+        )
+
+        fraud_counts.columns = [
+            "Class",
+            "Count"
         ]
-    })
 
-    fig = px.pie(
-        fraud_counts,
-        names="Class",
-        values="Count",
-        hole=0.45,
-        title="Fraud vs Legitimate",
-        color="Class",
-        color_discrete_map={
-            "Legitimate": "#2ECC71",
-            "Fraud": "#E74C3C"
-        }
+        fig = px.pie(
+            fraud_counts,
+            names="Class",
+            values="Count",
+            hole=0.45,
+            title="Fraud vs Legitimate",
+            color="Class",
+            color_discrete_map={
+                "Legitimate": "#2ECC71",
+                "Fraud": "#E74C3C",
+            }
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
+
+    # -----------------------------
+    # Amount Histogram
+    # -----------------------------
+
+    with chart2:
+
+        st.subheader(
+            "Transaction Amount Distribution"
+        )
+
+        fig = px.histogram(
+            transactions,
+            x="amount",
+            nbins=50,
+            title="Transaction Amount Distribution"
+        )
+
+        fig.update_layout(
+            xaxis_title="Amount ($)",
+            yaxis_title="Number of Transactions"
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
+
+    st.divider()
+
+    # =====================================================
+    # Fraud Scatter Plot
+    # =====================================================
+
+    st.subheader("Fraud Transactions Over Time")
+
+    fraud = transactions[
+        transactions["actual_class"] == 1
+    ]
+
+    if len(fraud) > 0:
+
+        fig = px.scatter(
+            fraud,
+            x="time",
+            y="amount",
+            color="amount",
+            title="Fraud Transactions",
+            color_continuous_scale="Reds"
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
+
+    else:
+
+        st.info(
+            "No fraud transactions available in the loaded sample."
+        )
+
+    st.divider()
+
+    # =====================================================
+    # Top 20 Largest Transactions
+    # =====================================================
+
+    st.subheader("💰 Top 20 Largest Transactions")
+
+    top_transactions = (
+        transactions
+        .sort_values(
+            "amount",
+            ascending=False
+        )
+        .head(20)
     )
 
-    fig.update_traces(
-        textposition="inside",
-        textinfo="percent+label"
-    )
-
-    st.plotly_chart(
-        fig,
+    st.dataframe(
+        top_transactions,
         use_container_width=True
     )
 
+    st.divider()
+
+    # =====================================================
+    # Download CSV
+    # =====================================================
+
+    st.download_button(
+        label="⬇ Download Transactions CSV",
+        data=transactions.to_csv(index=False),
+        file_name="transactions.csv",
+        mime="text/csv"
+    )
+
 # =====================================================
-# Histogram
+# TRANSACTIONS PAGE
 # =====================================================
 
-with chart2:
+elif page == "Transactions":
 
-    st.subheader("Transaction Amount Distribution")
+    st.title("📋 Transaction Explorer")
 
-    fig = px.histogram(
+    st.markdown("Search, filter and explore transaction records.")
+
+    st.divider()
+
+    col1, col2 = st.columns([3, 1])
+
+    with col1:
+
+        transaction_id = st.number_input(
+            "Search Transaction ID",
+            min_value=1,
+            step=1
+        )
+
+    with col2:
+
+        fraud_only = st.checkbox("Fraud Only")
+
+    st.divider()
+
+    if fraud_only:
+
+        transactions = pd.DataFrame(
+            get_fraud_transactions(limit=500)
+        )
+
+    else:
+
+        transactions = pd.DataFrame(
+            get_transactions(limit=1000)
+        )
+
+    # Search Result
+
+    if transaction_id > 0:
+
+        transaction = get_transaction(transaction_id)
+
+        if isinstance(transaction, dict):
+
+            st.subheader("Transaction Details")
+
+            st.json(transaction)
+
+        else:
+
+            st.error("Transaction not found.")
+
+    st.subheader("Transactions")
+
+    st.dataframe(
         transactions,
-        x="amount",
-        nbins=75,
-        title="Transaction Amount Distribution",
-        color_discrete_sequence=["#3498DB"]
+        use_container_width=True,
+        height=500
     )
 
-    fig.update_layout(
-        xaxis_title="Transaction Amount ($)",
-        yaxis_title="Number of Transactions"
+    st.download_button(
+        "⬇ Download CSV",
+        transactions.to_csv(index=False),
+        "transactions.csv",
+        "text/csv"
     )
 
-    st.plotly_chart(
-        fig,
-        use_container_width=True
+# =====================================================
+# PREDICTION PAGE
+# =====================================================
+
+elif page == "Prediction":
+
+    st.title("🤖 Fraud Prediction")
+
+    st.info(
+        "Prediction form will be added in the next step."
     )

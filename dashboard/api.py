@@ -31,3 +31,8 @@ def get_fraud_transactions(limit=100):
     return requests.get(
         f"{BASE_URL}/fraud-transactions?limit={limit}"
     ).json()
+
+def get_transaction(transaction_id):
+    return requests.get(
+        f"{BASE_URL}/transactions/{transaction_id}"
+    ).json()
