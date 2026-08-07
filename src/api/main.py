@@ -1,15 +1,29 @@
-from fastapi import FastAPI
-from src.database.queries import get_dashboard_summary
+from fastapi import FastAPI, HTTPException
 
 from src.api.schemas import Transaction
+from src.database.queries import (
+    get_dashboard_summary,
+    get_transactions,
+    get_transaction,
+    get_fraud_transactions,
+    get_random_legitimate,
+    get_random_fraud,
+)
 from src.ml.model import predict_transaction
+
+# =====================================================
+# FastAPI Application
+# =====================================================
 
 app = FastAPI(
     title="Fraud Analytics API",
     description="Backend API for Fraud Analytics Dashboard",
-    version="1.0.0"
+    version="1.0.0",
 )
 
+# =====================================================
+# Home
+# =====================================================
 
 @app.get("/")
 def home():
@@ -19,19 +33,16 @@ def home():
     }
 
 
+# =====================================================
+# Dashboard Summary
+# =====================================================
+
 @app.get("/dashboard")
 def dashboard():
 
     return get_dashboard_summary()
 
-from fastapi import HTTPException
 
-from src.database.queries import (
-    get_dashboard_summary,
-    get_transactions,
-    get_transaction,
-    get_fraud_transactions,
-)
 # =====================================================
 # Transactions
 # =====================================================
@@ -70,6 +81,7 @@ def fraud_transactions(limit: int = 100):
 
     return get_fraud_transactions(limit)
 
+
 # =====================================================
 # Fraud Prediction
 # =====================================================
@@ -77,6 +89,23 @@ def fraud_transactions(limit: int = 100):
 @app.post("/predict")
 def predict(transaction: Transaction):
 
-    result = predict_transaction(transaction)
+    return predict_transaction(transaction)
 
-    return result
+# =====================================================
+# Random Legitimate Transaction
+# =====================================================
+
+@app.get("/random-legitimate")
+def random_legitimate():
+
+    return get_random_legitimate()
+
+
+# =====================================================
+# Random Fraud Transaction
+# =====================================================
+
+@app.get("/random-fraud")
+def random_fraud():
+
+    return get_random_fraud()

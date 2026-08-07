@@ -1,6 +1,9 @@
 from sqlalchemy import text
 from src.database.connection import engine
 
+# =====================================================
+# Dashboard Summary
+# =====================================================
 
 def get_dashboard_summary():
 
@@ -35,11 +38,8 @@ def get_dashboard_summary():
             "total_transactions": total_transactions,
             "fraud_cases": fraud_cases,
             "legitimate_cases": legitimate_cases,
-            "fraud_percentage": fraud_percentage
+            "fraud_percentage": fraud_percentage,
         }
-
-from sqlalchemy import text
-
 
 # =====================================================
 # Get Recent Transactions
@@ -51,11 +51,7 @@ def get_transactions(limit=100):
 
         result = conn.execute(
             text("""
-                SELECT
-                    transaction_id,
-                    time,
-                    amount,
-                    actual_class
+                SELECT *
                 FROM transactions
                 ORDER BY transaction_id
                 LIMIT :limit
@@ -66,7 +62,6 @@ def get_transactions(limit=100):
         rows = result.fetchall()
 
         return [dict(row._mapping) for row in rows]
-
 
 # =====================================================
 # Get Single Transaction
@@ -88,11 +83,9 @@ def get_transaction(transaction_id):
         row = result.fetchone()
 
         if row:
-
             return dict(row._mapping)
 
         return None
-
 
 # =====================================================
 # Fraud Transactions
@@ -104,10 +97,7 @@ def get_fraud_transactions(limit=100):
 
         result = conn.execute(
             text("""
-                SELECT
-                    transaction_id,
-                    time,
-                    amount
+                SELECT *
                 FROM transactions
                 WHERE actual_class = 1
                 ORDER BY amount DESC
@@ -119,3 +109,53 @@ def get_fraud_transactions(limit=100):
         rows = result.fetchall()
 
         return [dict(row._mapping) for row in rows]
+
+# =====================================================
+# Random Legitimate Transaction
+# =====================================================
+
+def get_random_legitimate():
+
+    with engine.connect() as conn:
+
+        result = conn.execute(
+            text("""
+                SELECT *
+                FROM transactions
+                WHERE actual_class = 0
+                ORDER BY RANDOM()
+                LIMIT 1
+            """)
+        )
+
+        row = result.fetchone()
+
+        if row:
+            return dict(row._mapping)
+
+        return None
+
+# =====================================================
+# Random Fraud Transaction
+# =====================================================
+
+def get_random_fraud():
+
+    with engine.connect() as conn:
+
+        result = conn.execute(
+            text("""
+                SELECT *
+                FROM transactions
+                WHERE actual_class = 1
+                ORDER BY RANDOM()
+                LIMIT 1
+            """)
+        )
+
+        row = result.fetchone()
+
+        if row:
+            return dict(row._mapping)
+
+        return None

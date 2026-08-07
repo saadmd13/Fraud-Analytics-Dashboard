@@ -131,3 +131,5 @@ if __name__ == "__main__":
     print("Maximum :", round(stats[1], 2))
 
     print("Average :", round(stats[2], 2))
+
+    
